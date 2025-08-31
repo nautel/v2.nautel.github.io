@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://brittanychiang.com/v2.nautel.github.io/sitemap-index.xml
-Host: https://brittanychiang.com
+Sitemap: https://nautel.github.io/v2.nautel.github.io/sitemap-index.xml
+Host: https://nautel.github.io
