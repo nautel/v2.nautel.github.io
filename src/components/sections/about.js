@@ -125,7 +125,16 @@ const About = () => {
     sr.reveal(revealContainer.current, srConfig());
   }, []);
 
-  const skills = ['JavaScript (ES6+)', 'TypeScript', 'React', 'Eleventy', 'Node.js', 'WordPress'];
+  const skills = [
+    'PyTorch',
+    'TensorFlow',
+    'Python',
+    'CUDA',
+    'Docker',
+    'Foundation Models',
+    'Anomaly Detection',
+    'Multimodal AI',
+  ];
 
   return (
     <StyledAboutSection id="about" ref={revealContainer}>
@@ -135,33 +144,31 @@ const About = () => {
         <StyledText>
           <div>
             <p>
-              Hello! My name is Brittany and I enjoy creating things that live on the internet. My
-              interest in web development started back in 2012 when I decided to try editing custom
-              Tumblr themes — turns out hacking together a custom reblog button taught me a lot
-              about HTML &amp; CSS!
+              Hello! My name is Le Tuan and I'm an AI Research Scientist passionate about bridging
+              cutting-edge research with real-world applications. My journey in artificial
+              intelligence began during my electrical engineering studies, where I discovered the
+              transformative potential of machine learning for complex systems optimization.
             </p>
 
             <p>
-              Fast-forward to today, and I’ve had the privilege of working at{' '}
-              <a href="https://us.mullenlowe.com/">an advertising agency</a>,{' '}
-              <a href="https://starry.com/">a start-up</a>,{' '}
-              <a href="https://www.apple.com/">a huge corporation</a>, and{' '}
-              <a href="https://scout.camd.northeastern.edu/">a student-led design studio</a>. My
-              main focus these days is building accessible, inclusive products and digital
-              experiences at <a href="https://upstatement.com/">Upstatement</a> for a variety of
-              clients.
+              Fast-forward to today, and I've had the privilege of conducting research at{' '}
+              <a href="https://www.hds.utc.fr/">Heudiasyc Lab</a> on autonomous systems, completing
+              my PhD at <a href="https://www.utc.fr/">UTC</a> in anomaly detection, and applying ML
+              solutions in industry at <a href="#">VATEC Energy</a> and Vietnam Electricity. My
+              research focuses on foundation models, multimodal learning, and unsupervised anomaly
+              detection systems.
             </p>
 
             <p>
-              I also recently{' '}
-              <a href="https://www.newline.co/courses/build-a-spotify-connected-app">
-                launched a course
+              I recently published my PhD research in{' '}
+              <a href="https://doi.org/10.1016/j.neucom.2024.127791">
+                Neurocomputing (Q1, IF: 5.7)
               </a>{' '}
-              that covers everything you need to build a web app with the Spotify API using Node
-              &amp; React.
+              introducing RCLED, a novel architecture for anomaly detection in multivariate
+              time-series data that achieves state-of-the-art performance with 93%+ accuracy.
             </p>
 
-            <p>Here are a few technologies I’ve been working with recently:</p>
+            <p>Here are some technologies I've been working with recently:</p>
           </div>
 
           <ul className="skills-list">

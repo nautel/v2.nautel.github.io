@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'gatsby';
 import PropTypes from 'prop-types';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import styled, { css } from 'styled-components';
 import { navLinks } from '@config';
 import { loaderDelay } from '@utils';
+import { throttle } from '@utils/performance';
 import { useScrollDirection, usePrefersReducedMotion } from '@hooks';
 import { Menu } from '@components';
 import { IconLogo, IconHex } from '@components/icons';
+import { ANIMATION_DELAYS, SCROLL_THRESHOLDS } from '@constants';
 
 const StyledHeader = styled.header`
   ${({ theme }) => theme.mixins.flexBetween};
@@ -33,7 +35,7 @@ const StyledHeader = styled.header`
 
   @media (prefers-reduced-motion: no-preference) {
     ${props =>
-    props.scrollDirection === 'up' &&
+      props.scrollDirection === 'up' &&
       !props.scrolledToTop &&
       css`
         height: var(--nav-scroll-height);
@@ -43,7 +45,7 @@ const StyledHeader = styled.header`
       `};
 
     ${props =>
-    props.scrollDirection === 'down' &&
+      props.scrollDirection === 'down' &&
       !props.scrolledToTop &&
       css`
         height: var(--nav-scroll-height);
@@ -150,15 +152,18 @@ const StyledLinks = styled.div`
   }
 `;
 
-const Nav = ({ isHome }) => {
+const Nav = memo(({ isHome }) => {
   const [isMounted, setIsMounted] = useState(!isHome);
   const scrollDirection = useScrollDirection('down');
   const [scrolledToTop, setScrolledToTop] = useState(true);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const handleScroll = () => {
-    setScrolledToTop(window.pageYOffset < 50);
-  };
+  const handleScroll = useCallback(
+    throttle(() => {
+      setScrolledToTop(window.pageYOffset < SCROLL_THRESHOLDS.TOP_THRESHOLD);
+    }, 16), // ~60fps throttling
+    [],
+  );
 
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -206,7 +211,7 @@ const Nav = ({ isHome }) => {
   );
 
   const ResumeLink = (
-    <a className="resume-button" href="/resume.pdf" target="_blank" rel="noopener noreferrer">
+    <a className="resume-button" href="/resume.html" target="_blank" rel="noopener noreferrer">
       Resume
     </a>
   );
@@ -249,7 +254,13 @@ const Nav = ({ isHome }) => {
                     navLinks &&
                     navLinks.map(({ url, name }, i) => (
                       <CSSTransition key={i} classNames={fadeDownClass} timeout={timeout}>
-                        <li key={i} style={{ transitionDelay: `${isHome ? i * 100 : 0}ms` }}>
+                        <li
+                          key={i}
+                          style={{
+                            transitionDelay: `${
+                              isHome ? i * ANIMATION_DELAYS.NAV_ITEM_DELAY : 0
+                            }ms`,
+                          }}>
                           <Link to={url}>{name}</Link>
                         </li>
                       </CSSTransition>
@@ -260,7 +271,12 @@ const Nav = ({ isHome }) => {
               <TransitionGroup component={null}>
                 {isMounted && (
                   <CSSTransition classNames={fadeDownClass} timeout={timeout}>
-                    <div style={{ transitionDelay: `${isHome ? navLinks.length * 100 : 0}ms` }}>
+                    <div
+                      style={{
+                        transitionDelay: `${
+                          isHome ? navLinks.length * ANIMATION_DELAYS.NAV_ITEM_DELAY : 0
+                        }ms`,
+                      }}>
                       {ResumeLink}
                     </div>
                   </CSSTransition>
@@ -280,7 +296,9 @@ const Nav = ({ isHome }) => {
       </StyledNav>
     </StyledHeader>
   );
-};
+});
+
+Nav.displayName = 'Nav';
 
 Nav.propTypes = {
   isHome: PropTypes.bool,

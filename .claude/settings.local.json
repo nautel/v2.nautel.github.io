@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(nvm install:*)",
+      "Bash(node:*)",
+      "Bash(yarn)",
+      "Bash(npm start)",
+      "Bash(rm:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx gatsby develop:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run deploy:*)",
+      "Bash(git config:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:nautel.github.io)",
+      "Bash(npx gh-pages:*)",
+      "Bash(grep:*)",
+      "Bash(npm run clean:*)",
+      "WebFetch(domain:www.letuan.org)",
+      "Bash(npm ls:*)",
+      "Bash(npm test:*)",
+      "Bash(cat:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run format:*)",
+      "Bash(npm run develop:*)",
+      "Bash(npm run serve:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

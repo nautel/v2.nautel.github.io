@@ -1,4 +1,23 @@
 {
   "root": true,
-  "extends": "@upstatement/eslint-config/react"
+  "extends": "@upstatement/eslint-config/react",
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true,
+    "jest": true
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "overrides": [
+    {
+      "files": ["**/__tests__/**/*", "**/*.test.js"],
+      "env": {
+        "jest": true
+      }
+    }
+  ]
 }

@@ -22,3 +22,5 @@ export const KEY_CODES = {
   SPACE_IE11: 'Spacebar',
   ENTER: 'Enter',
 };
+
+export * from './performance';

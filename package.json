@@ -20,7 +20,13 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "prepare": "husky install",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "deploy": "gatsby build --prefix-paths && gh-pages -d public",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --coverage --watchAll=false",
+    "test:a11y": "jest --testPathPattern=accessibility"
   },
   "lint-staged": {
     "*.{js,css,json,md}": [
@@ -64,15 +70,24 @@
     "@babel/core": "^7.14.0",
     "@babel/eslint-parser": "^7.13.14",
     "@babel/preset-react": "^7.13.13",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^12.1.5",
+    "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/user-event": "^14.6.1",
     "@upstatement/eslint-config": "^1.0.0",
     "@upstatement/prettier-config": "^1.0.0",
+    "axe-core": "^4.10.3",
     "babel-preset-gatsby": "^1.4.0",
     "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-jsx-a11y": "^6.4.1",
     "eslint-plugin-react": "^7.23.2",
     "gatsby-remark-code-titles": "^1.1.0",
+    "gh-pages": "^6.3.0",
     "husky": "^6.0.0",
+    "jest": "^30.1.1",
+    "jest-axe": "^10.0.0",
+    "jest-environment-jsdom": "^30.1.1",
     "lint-staged": "^10.1.2",
     "prettier": "^2.2.1"
   }
