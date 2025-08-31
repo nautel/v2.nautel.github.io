@@ -33,11 +33,11 @@ self.__precacheManifest = [
     "url": "framework-71f6327df07cb994cfb4.js"
   },
   {
-    "url": "app-97b6f7cc93d433c97caa.js"
+    "url": "app-b47d92d1fd7a2099d8d7.js"
   },
   {
     "url": "offline-plugin-app-shell-fallback/index.html",
-    "revision": "0f8584a756ac2cdd849723dfc132b37f"
+    "revision": "baccde5536f1746c3822289d277eb79d"
   },
   {
     "url": "component---cache-caches-gatsby-plugin-offline-app-shell-js-6f061b09cc63f0400406.js"
@@ -48,7 +48,7 @@ self.__precacheManifest = [
   },
   {
     "url": "page-data/app-data.json",
-    "revision": "9e3552f41ef775f8fd9c763582c812eb"
+    "revision": "cfdd47e566d01afffb02d89b6a694bb2"
   },
   {
     "url": "manifest.webmanifest",
@@ -144,7 +144,7 @@ const navigationRoute = new NavigationRoute(async ({ event }) => {
   // Check for resources + the app bundle
   // The latter may not exist if the SW is updating to a new version
   const resources = await idbKeyval.get(`resources:${pathname}`)
-  if (!resources || !(await caches.match(`/v2.nautel.github.io/app-97b6f7cc93d433c97caa.js`))) {
+  if (!resources || !(await caches.match(`/v2.nautel.github.io/app-b47d92d1fd7a2099d8d7.js`))) {
     return await fetch(event.request)
   }
 
