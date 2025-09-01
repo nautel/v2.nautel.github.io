@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://nautel.github.io/v2.nautel.github.io/sitemap-index.xml
+Sitemap: https://nautel.github.io/v4/sitemap-index.xml
 Host: https://nautel.github.io
