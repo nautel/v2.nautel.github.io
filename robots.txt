@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://nautel.github.io/v4/sitemap-index.xml
-Host: https://nautel.github.io
+Sitemap: https://www.letuan.org/sitemap-index.xml
+Host: https://www.letuan.org
