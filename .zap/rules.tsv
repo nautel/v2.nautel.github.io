@@ -1,0 +1,103 @@
+# ZAP Security Baseline Rules for Portfolio Application
+# Format: RULE_ID	ACTION	PARAMETER	VALUE
+
+# Ignore false positives for static assets
+10021	IGNORE	threshold	High
+10021	IGNORE	url	.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$
+
+# X-Frame-Options security header
+10020	WARN	threshold	Medium
+
+# Content Security Policy
+10038	WARN	threshold	Medium
+10038	IGNORE	url	.*sw\.js$
+
+# Cross-Domain Misconfiguration
+10098	INFO	threshold	Medium
+
+# Cookie Security
+10054	WARN	threshold	Low
+10054	IGNORE	cookie	_ga.*
+10054	IGNORE	cookie	_gid.*
+
+# Information Disclosure
+10024	INFO	threshold	Low
+10024	IGNORE	url	.*404.*
+
+# Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s)
+10037	INFO	threshold	Low
+
+# Secure Pages Include Mixed Content
+10040	WARN	threshold	Medium
+
+# HTTP to HTTPS Insecure Transition
+10041	WARN	threshold	Medium
+
+# HTTPS to HTTP Insecure Transition
+10042	HIGH	threshold	High
+
+# User Controllable JavaScript Event (XSS)
+10043	HIGH	threshold	High
+
+# Big Redirect Detected (Potential Sensitive Information Leak)
+10044	INFO	threshold	Low
+
+# Retrieved from Cache
+10050	INFO	threshold	Informational
+
+# Relative Path Confusion
+10051	INFO	threshold	Medium
+
+# X-ChromeLogger-Data (XCOLD) Header Information Leak
+10052	WARN	threshold	Medium
+
+# Application Error Disclosure
+10053	WARN	threshold	Medium
+
+# Cookie No HttpOnly Flag
+10010	WARN	threshold	Low
+
+# Cookie Without Secure Flag
+10011	WARN	threshold	Medium
+
+# Password Autocomplete in Browser
+10012	INFO	threshold	Low
+
+# Weak Authentication Method
+10013	WARN	threshold	Medium
+
+# HTTP Parameter Override
+10026	INFO	threshold	Medium
+
+# Information Disclosure - Debug Error Messages
+10023	WARN	threshold	Low
+
+# Information Disclosure - Sensitive Information in URL
+10024	INFO	threshold	Medium
+
+# Information Disclosure - Sensitive Information in HTTP Referrer Header
+10025	INFO	threshold	Medium
+
+# Generic Padding Oracle
+10046	HIGH	threshold	High
+
+# Remote File Inclusion
+10047	HIGH	threshold	High
+
+# Source Code Disclosure
+10048	HIGH	threshold	High
+
+# Script Passive Scan Rules
+50001	INFO	threshold	Medium
+
+# Stats Passive Scan Rule
+50003	INFO	threshold	Medium
+
+# Insecure JSF ViewState
+90001	HIGH	threshold	High
+
+# Charset Mismatch
+90011	INFO	threshold	Low
+
+# WSDL File Detection
+90030	INFO	threshold	Medium

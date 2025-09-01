@@ -1,18 +1,26 @@
-name: CI/CD Pipeline
+name: Comprehensive CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main]
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly security scans
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+  pull-requests: write
 
 env:
   NODE_VERSION: '18'
+  THEME_API_PORT: 3001
 
 jobs:
-  # Code quality and testing
-  quality:
-    name: Code Quality & Tests
+  # Code quality and security analysis
+  code-analysis:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,32 +32,101 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
-      - name: Run linting
+      - name: Run ESLint with SARIF output
         run: |
-          npm run format -- --check
-          if npm run lint --if-present; then
-            echo "Linting passed"
-          else
-            echo "Linting not configured, skipping"
-          fi
+          npx eslint src/ --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif || true
 
-      - name: Run tests
+      - name: Upload ESLint results to GitHub
+        if: always()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: eslint-results.sarif
+          wait-for-processing: true
+
+      - name: Run Prettier format check
+        run: npx prettier --check "**/*.{js,jsx,json,md,yml,yaml}"
+
+      - name: Audit dependencies
+        run: yarn audit --level moderate
+
+  # Dependency and license checks
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v3
+        with:
+          fail-on-severity: moderate
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
+
+  # Theme system comprehensive testing
+  theme-system-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-category: ['unit', 'integration', 'visual-regression', 'performance']
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup test environment
         run: |
-          npm run test -- --watchAll=false --coverage
+          # Create test environment variables
+          echo "GATSBY_THEME_API_URL=http://localhost:${{ env.THEME_API_PORT }}/api/v1" >> $GITHUB_ENV
+          echo "REACT_APP_TEST_MODE=true" >> $GITHUB_ENV
+
+      - name: Start mock API server
+        run: |
+          node scripts/mock-api-server.js &
+          sleep 5
+          curl -f http://localhost:${{ env.THEME_API_PORT }}/health || exit 1
+        env:
+          PORT: ${{ env.THEME_API_PORT }}
+
+      - name: Run theme system tests
+        run: |
+          case "${{ matrix.test-category }}" in
+            unit)
+              yarn jest --selectProjects=unit --coverage --testPathPattern="theme|Theme"
+              ;;
+            integration)
+              yarn jest --selectProjects=integration --testPathPattern="theme|Theme"
+              ;;
+            visual-regression)
+              yarn jest --selectProjects=visual --testPathPattern="theme|Theme"
+              ;;
+            performance)
+              yarn jest --selectProjects=performance --testPathPattern="theme|Theme"
+              ;;
+          esac
         env:
           CI: true
 
-      - name: Upload coverage to Codecov
+      - name: Upload test coverage
+        if: matrix.test-category == 'unit'
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: unittests
-          name: codecov-umbrella
+          flags: theme-system
+          name: theme-system-coverage
 
   # Build the application
   build:

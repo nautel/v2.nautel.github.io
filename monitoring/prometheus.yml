@@ -1,0 +1,181 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'portfolio-production'
+    environment: 'production'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Frontend application metrics
+  - job_name: 'frontend'
+    static_configs:
+      - targets: ['frontend:80']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'frontend'
+
+  # Backend API metrics
+  - job_name: 'backend-api'
+    static_configs:
+      - targets: ['backend:3001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'backend-api'
+
+  # PostgreSQL database metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgresql'
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis'
+
+  # MongoDB metrics
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'mongodb'
+
+  # Nginx/Load balancer metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'nginx'
+
+  # Node.js application metrics (if using prom-client)
+  - job_name: 'nodejs-app'
+    static_configs:
+      - targets: ['backend:3001']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # System-level metrics (if node_exporter is deployed)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'system'
+
+  # Docker container metrics (if cAdvisor is deployed)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'docker-containers'
+
+  # Theme system specific metrics
+  - job_name: 'theme-analytics'
+    static_configs:
+      - targets: ['backend:3001']
+    metrics_path: '/api/v1/metrics/themes'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'theme-system'
+
+  # Blackbox monitoring for external endpoints
+  - job_name: 'blackbox-http'
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - https://nautel.dev
+        - https://api.nautel.dev/health
+        - https://nautel.dev/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # SSL certificate expiration monitoring
+  - job_name: 'blackbox-ssl'
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - https://nautel.dev:443
+        - https://api.nautel.dev:443
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Lighthouse CI metrics (if available)
+  - job_name: 'lighthouse-ci'
+    static_configs:
+      - targets: ['lighthouse-ci:9222']
+    metrics_path: '/metrics'
+    scrape_interval: 300s  # 5 minutes
+    scrape_timeout: 60s
+    honor_labels: true

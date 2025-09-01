@@ -1,28 +1,55 @@
-# Testing Documentation
+# Theme System Test Suite
 
-## Overview
+This document provides a comprehensive overview of the testing strategy and implementation for the dual-theme system in the Gatsby portfolio website.
 
-This document outlines the comprehensive testing strategy implemented for Le Tuan's portfolio website, focusing on the updated sections containing CV information.
+## Test Architecture
+
+The test suite follows a multi-layered approach based on the testing pyramid:
+
+```
+                    /\
+                   /  \
+              E2E Tests (Few)
+                 /    \
+                /      \
+        Integration Tests (Some)
+           /            \
+          /              \
+    Unit Tests (Many) + Accessibility
+```
 
 ## Test Structure
 
 ```
 src/
 ├── __tests__/
-│   ├── accessibility/
-│   │   └── components-a11y.test.js     # Accessibility tests using jest-axe
-│   ├── content/
-│   │   └── job-content.test.js         # Content validation for markdown files
+│   ├── test-utils.js                     # Shared test utilities
+│   ├── contexts/
+│   │   └── ThemeContext.test.js         # Context and hook tests
+│   ├── components/
+│   │   ├── ThemeToggle.test.js          # Toggle component tests
+│   │   ├── ThemePreview.test.js         # Preview component tests
+│   │   └── ThemeSelector.test.js        # Selector component tests
+│   ├── hooks/
+│   │   ├── useSystemTheme.test.js       # System detection hooks
+│   │   ├── useThemeAPI.test.js          # API integration hooks
+│   │   └── useThemeTransition.test.js   # Animation hooks
+│   ├── services/
+│   │   └── themeAPI.test.js             # API service tests
 │   ├── integration/
-│   │   └── markdown-content.test.js    # GraphQL integration tests
-│   └── visual/
-│       └── visual-regression.test.js   # Layout and visual consistency tests
-└── components/
-    └── sections/
-        └── __tests__/
-            ├── about.test.js           # About component unit tests
-            ├── jobs.test.js            # Jobs component unit tests
-            └── contact.test.js         # Contact component unit tests
+│   │   └── theme-switching.test.js      # Integration scenarios
+│   ├── accessibility/
+│   │   └── theme-accessibility.test.js  # A11y compliance
+│   ├── visual/
+│   │   └── theme-visual-regression.test.js # Visual consistency
+│   └── performance/
+│       └── theme-performance.test.js    # Performance metrics
+├── setupTests.js                        # Test environment setup
+└── cypress/
+    ├── e2e/
+    │   └── theme-switching.cy.js        # E2E user journeys
+    └── support/
+        └── commands.js                  # Custom Cypress commands
 ```
 
 ## Test Categories

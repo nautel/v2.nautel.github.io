@@ -1,23 +1,297 @@
-name: Deploy to GitHub Pages
+name: Production Deployment Pipeline
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, closed ]
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  packages: write
+  security-events: write
 
 concurrency:
-  group: "pages"
+  group: "deployment-${{ github.ref }}"
   cancel-in-progress: false
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: '18'
+
 jobs:
-  build:
+  # Security and code quality checks
+  security-scan:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Enhanced testing pipeline with theme system focus
+  test-suite:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+        test-type: [unit, integration, accessibility, performance, visual]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run ${{ matrix.test-type }} tests
+        run: |
+          case "${{ matrix.test-type }}" in
+            unit)
+              yarn jest --selectProjects=unit --coverage --maxWorkers=2
+              ;;
+            integration)
+              yarn jest --selectProjects=integration --maxWorkers=1
+              ;;
+            accessibility)
+              yarn jest --selectProjects=accessibility --maxWorkers=1
+              ;;
+            performance)
+              yarn jest --selectProjects=performance --maxWorkers=1
+              ;;
+            visual)
+              yarn jest --selectProjects=visual --maxWorkers=1
+              ;;
+          esac
+        env:
+          CI: true
+          GATSBY_THEME_API_URL: http://localhost:3001/api/v1
+
+      - name: Upload test coverage (unit tests only)
+        if: matrix.test-type == 'unit' && matrix.node-version == '20.x'
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/
+          flags: unittests,${{ matrix.test-type }}
+          name: codecov-${{ matrix.test-type }}
+          fail_ci_if_error: true
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.test-type }}-${{ matrix.node-version }}
+          path: |
+            coverage/
+            test-results/
+          retention-days: 30
+
+  # E2E testing with Cypress
+  e2e-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build application
+        run: yarn build
+        env:
+          NODE_ENV: production
+          GATSBY_THEME_API_URL: http://localhost:3001/api/v1
+
+      - name: Start application and API mock
+        run: |
+          yarn serve &
+          # Start mock API server for E2E tests
+          node scripts/mock-api-server.js &
+          sleep 10
+        env:
+          CI: true
+
+      - name: Run Cypress E2E tests
+        uses: cypress-io/github-action@v6
+        with:
+          browser: ${{ matrix.browser }}
+          wait-on: 'http://localhost:9000, http://localhost:3001/health'
+          wait-on-timeout: 120
+          config: baseUrl=http://localhost:9000
+          spec: cypress/e2e/theme-system/**/*
+
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-screenshots-${{ matrix.browser }}
+          path: cypress/screenshots
+
+  # Lighthouse performance audit
+  lighthouse-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build site
+        run: yarn build
+        env:
+          NODE_ENV: production
+
+      - name: Serve site
+        run: yarn serve &
+
+      - name: Wait for server
+        run: sleep 10
+
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.12.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+  # Build and push Docker images
+  build-images:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [security-scan, test-suite, e2e-tests, lighthouse-audit]
+    outputs:
+      frontend-image: ${{ steps.meta-frontend.outputs.tags }}
+      backend-image: ${{ steps.meta-backend.outputs.tags }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: frontend-production
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            GATSBY_THEME_API_URL=${{ secrets.GATSBY_THEME_API_URL }}
+            GATSBY_GA_TRACKING_ID=${{ secrets.GA_TRACKING_ID }}
+            GATSBY_SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+            GATSBY_ANALYTICS_ENABLED=true
+
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: backend-production
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Deploy to staging environment
+  deploy-staging:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: [build-images]
+    environment:
+      name: staging
+      url: https://staging.nautel.dev
+    
+    steps:
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment"
+          # Add staging deployment commands here
+
+  # Deploy to GitHub Pages (fallback static deployment)
+  deploy-pages:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [test-suite, e2e-tests, lighthouse-audit]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
       - name: Checkout
@@ -26,35 +300,76 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
           
       - name: Install dependencies
         run: yarn install --frozen-lockfile
         
-      - name: Run tests
-        run: yarn test:ci
-        
       - name: Build site
         run: yarn build
         env:
           NODE_ENV: production
+          GATSBY_THEME_API_URL: ${{ secrets.GATSBY_THEME_API_URL }}
+          GATSBY_GA_TRACKING_ID: ${{ secrets.GA_TRACKING_ID }}
+          GATSBY_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          GATSBY_ANALYTICS_ENABLED: true
           
       - name: Upload build artifacts
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
 
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: build
-    
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-      
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # Production deployment
+  deploy-production:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [build-images, deploy-pages]
+    environment:
+      name: production
+      url: https://nautel.dev
+    
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment"
+          echo "Frontend image: ${{ needs.build-images.outputs.frontend-image }}"
+          echo "Backend image: ${{ needs.build-images.outputs.backend-image }}"
+          # Add production deployment commands here
+
+  # Post-deployment monitoring
+  post-deployment:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    
+    steps:
+      - name: Health check
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+          # Perform health checks
+          curl -f https://nautel.dev/health || exit 1
+          curl -f https://api.nautel.dev/health || exit 1
+
+      - name: Notify deployment success
+        uses: 8398a7/action-slack@v3
+        if: success()
+        with:
+          status: success
+          text: "Production deployment successful! 🚀"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify deployment failure
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: failure
+          text: "Production deployment failed! ❌"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

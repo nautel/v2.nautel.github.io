@@ -7,7 +7,7 @@ import { navLinks } from '@config';
 import { loaderDelay } from '@utils';
 import { throttle } from '@utils/performance';
 import { useScrollDirection, usePrefersReducedMotion } from '@hooks';
-import { Menu } from '@components';
+import { Menu, ThemeToggle } from '@components';
 import { IconLogo, IconHex } from '@components/icons';
 import { ANIMATION_DELAYS, SCROLL_THRESHOLDS } from '@constants';
 
@@ -152,6 +152,16 @@ const StyledLinks = styled.div`
   }
 `;
 
+const ThemeToggleWrapper = styled.div`
+  margin-left: 15px;
+  display: flex;
+  align-items: center;
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
 const Nav = memo(({ isHome }) => {
   const [isMounted, setIsMounted] = useState(!isHome);
   const scrollDirection = useScrollDirection('down');
@@ -216,6 +226,12 @@ const Nav = memo(({ isHome }) => {
     </a>
   );
 
+  const ThemeToggleComponent = (
+    <ThemeToggleWrapper>
+      <ThemeToggle variant="switch" />
+    </ThemeToggleWrapper>
+  );
+
   return (
     <StyledHeader scrollDirection={scrollDirection} scrolledToTop={scrolledToTop}>
       <StyledNav>
@@ -233,6 +249,7 @@ const Nav = memo(({ isHome }) => {
                   ))}
               </ol>
               <div>{ResumeLink}</div>
+              {ThemeToggleComponent}
             </StyledLinks>
 
             <Menu />
@@ -278,6 +295,21 @@ const Nav = memo(({ isHome }) => {
                         }ms`,
                       }}>
                       {ResumeLink}
+                    </div>
+                  </CSSTransition>
+                )}
+              </TransitionGroup>
+
+              <TransitionGroup component={null}>
+                {isMounted && (
+                  <CSSTransition classNames={fadeDownClass} timeout={timeout}>
+                    <div
+                      style={{
+                        transitionDelay: `${
+                          isHome ? (navLinks.length + 1) * ANIMATION_DELAYS.NAV_ITEM_DELAY : 0
+                        }ms`,
+                      }}>
+                      {ThemeToggleComponent}
                     </div>
                   </CSSTransition>
                 )}

@@ -1,0 +1,263 @@
+# Security configuration for the portfolio application deployment
+
+# Application Security Configuration
+security:
+  # Content Security Policy
+  csp:
+    enabled: true
+    policies:
+      default-src: "'self'"
+      script-src: "'self' 'unsafe-inline' 'unsafe-eval' www.google-analytics.com www.googletagmanager.com"
+      style-src: "'self' 'unsafe-inline' fonts.googleapis.com"
+      font-src: "'self' fonts.gstatic.com"
+      img-src: "'self' data: www.google-analytics.com www.googletagmanager.com"
+      connect-src: "'self' www.google-analytics.com"
+      frame-ancestors: "'self'"
+      base-uri: "'self'"
+      form-action: "'self'"
+      upgrade-insecure-requests: true
+
+  # CORS Configuration
+  cors:
+    enabled: true
+    origins:
+      - "https://nautel.dev"
+      - "https://www.nautel.dev"
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+      - OPTIONS
+    headers:
+      - "Content-Type"
+      - "Authorization"
+      - "X-Requested-With"
+      - "Accept"
+      - "Origin"
+      - "Cache-Control"
+    credentials: true
+    maxAge: 86400
+
+  # Rate Limiting
+  rate_limiting:
+    enabled: true
+    global:
+      windowMs: 900000  # 15 minutes
+      max: 1000  # requests per windowMs
+    api:
+      windowMs: 900000  # 15 minutes
+      max: 100  # requests per windowMs per IP
+    theme_api:
+      windowMs: 60000   # 1 minute
+      max: 30   # theme switches per minute
+    login:
+      windowMs: 900000  # 15 minutes
+      max: 5    # login attempts per windowMs
+
+  # Input Validation
+  validation:
+    enabled: true
+    max_payload_size: "10mb"
+    sanitize_html: true
+    validate_json_schema: true
+    
+  # Session Security
+  session:
+    secure: true
+    httpOnly: true
+    sameSite: "strict"
+    maxAge: 86400000  # 24 hours
+    name: "portfolio_session"
+
+  # JWT Configuration
+  jwt:
+    algorithm: "HS256"
+    issuer: "nautel.dev"
+    audience: "nautel.dev"
+    expiresIn: "1h"
+    refreshTokenExpiresIn: "7d"
+
+  # Database Security
+  database:
+    ssl: true
+    connection_timeout: 30000
+    idle_timeout: 600000
+    max_connections: 100
+    
+  # Redis Security
+  redis:
+    requirepass: true
+    tls: true
+    rename_dangerous_commands: true
+
+# Infrastructure Security
+infrastructure:
+  # Container Security
+  containers:
+    run_as_non_root: true
+    read_only_filesystem: true
+    no_new_privileges: true
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+  # Network Security
+  network:
+    # Internal networks for service communication
+    internal_networks:
+      - db-network
+      - monitoring-network
+      - logging-network
+    
+    # Firewall rules
+    firewall:
+      deny_all_by_default: true
+      allow_rules:
+        - port: 80
+          protocol: tcp
+          source: "0.0.0.0/0"
+        - port: 443
+          protocol: tcp
+          source: "0.0.0.0/0"
+        - port: 22
+          protocol: tcp
+          source: "trusted_ips_only"
+
+  # SSL/TLS Configuration
+  ssl:
+    minimum_version: "TLSv1.2"
+    preferred_version: "TLSv1.3"
+    ciphers:
+      - "ECDHE-ECDSA-AES128-GCM-SHA256"
+      - "ECDHE-RSA-AES128-GCM-SHA256"
+      - "ECDHE-ECDSA-AES256-GCM-SHA384"
+      - "ECDHE-RSA-AES256-GCM-SHA384"
+    hsts:
+      max_age: 31536000
+      include_subdomains: true
+      preload: true
+
+# Monitoring and Incident Response
+monitoring:
+  # Security Event Logging
+  security_logging:
+    enabled: true
+    log_level: "warn"
+    events:
+      - authentication_failures
+      - authorization_failures
+      - rate_limit_exceeded
+      - suspicious_requests
+      - error_responses
+    
+  # Intrusion Detection
+  intrusion_detection:
+    enabled: true
+    rules:
+      - name: "SQL Injection Attempt"
+        pattern: "union.*select|select.*from.*information_schema"
+        action: "block"
+      - name: "XSS Attempt"
+        pattern: "<script|javascript:|onerror=|onload="
+        action: "block"
+      - name: "Path Traversal"
+        pattern: "\\.\\./|\\.\\.\\\\|%2e%2e%2f"
+        action: "block"
+
+  # Alerting
+  alerts:
+    channels:
+      - type: "slack"
+        webhook_url: "${SLACK_SECURITY_WEBHOOK}"
+      - type: "email"
+        recipients: ["security@nautel.dev"]
+    
+    rules:
+      - name: "High Error Rate"
+        condition: "error_rate > 5%"
+        severity: "warning"
+      - name: "Authentication Failures"
+        condition: "auth_failures > 10 in 5m"
+        severity: "critical"
+      - name: "DDoS Detection"
+        condition: "requests_per_second > 1000"
+        severity: "critical"
+
+# Backup and Recovery Security
+backup:
+  encryption:
+    enabled: true
+    algorithm: "AES-256-GCM"
+    key_rotation: "monthly"
+  
+  access_control:
+    require_2fa: true
+    allowed_ips: ["trusted_backup_locations"]
+  
+  retention:
+    daily: 7
+    weekly: 4
+    monthly: 12
+    yearly: 3
+
+# Compliance and Auditing
+compliance:
+  # Privacy Settings (GDPR, CCPA)
+  privacy:
+    data_retention: "2 years"
+    anonymize_logs: true
+    cookie_consent: true
+    user_data_export: true
+    user_data_deletion: true
+  
+  # Audit Logging
+  audit:
+    enabled: true
+    events:
+      - user_authentication
+      - data_access
+      - configuration_changes
+      - security_events
+    retention: "3 years"
+    
+  # Security Scanning
+  scanning:
+    vulnerability_scan: "weekly"
+    dependency_scan: "daily"
+    container_scan: "on_build"
+    penetration_test: "quarterly"
+
+# Environment-specific Overrides
+environments:
+  development:
+    security:
+      csp:
+        script-src: "'self' 'unsafe-inline' 'unsafe-eval'"
+      cors:
+        origins: ["http://localhost:8000", "http://localhost:3000"]
+      rate_limiting:
+        enabled: false
+  
+  staging:
+    security:
+      cors:
+        origins: ["https://staging.nautel.dev"]
+      rate_limiting:
+        api:
+          max: 200
+  
+  production:
+    security:
+      csp:
+        upgrade-insecure-requests: true
+      hsts:
+        preload: true
+      rate_limiting:
+        enabled: true
