@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { IconLoader } from '@components/icons';
 
 const StyledLoader = styled.div`
-  ${({ theme }) => theme.mixins.flexCenter};
+  ${({ theme }) => theme?.mixins?.flexCenter || 'display: flex; align-items: center; justify-content: center;'};
   position: fixed;
   top: 0;
   bottom: 0;

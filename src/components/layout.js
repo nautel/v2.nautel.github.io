@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styled, { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { Head, Loader, Nav, Social, Email, Footer } from '@components';
-import { GlobalStyle } from '@styles';
+import { GlobalStyle, theme as defaultTheme } from '@styles';
 import { ThemeProvider, useTheme } from '@contexts/ThemeContext';
 import { useThemeTransition } from '@hooks/useThemeTransition';
 
@@ -78,7 +78,7 @@ const LayoutInner = ({ children, location }) => {
     <>
       <Head />
 
-      <StyledThemeProvider theme={theme}>
+      <StyledThemeProvider theme={theme || defaultTheme}>
         <GlobalStyle />
 
         {/* Theme transition overlay */}

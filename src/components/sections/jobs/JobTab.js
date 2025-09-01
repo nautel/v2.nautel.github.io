@@ -59,7 +59,7 @@ JobTab.propTypes = {
   onClick: PropTypes.func.isRequired,
   tabRef: PropTypes.oneOfType([
     PropTypes.func,
-    PropTypes.shape({ current: PropTypes.instanceOf(Element) }),
+    PropTypes.shape({ current: PropTypes.any }),
   ]),
   id: PropTypes.string.isRequired,
   tabIndex: PropTypes.string.isRequired,

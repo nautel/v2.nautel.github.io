@@ -6,7 +6,7 @@ import sr from '@utils/sr';
 import { usePrefersReducedMotion } from '@hooks';
 import useKeyboardNavigation from '@hooks/useKeyboardNavigation';
 import useTabFocus from '@hooks/useTabFocus';
-import { JobTab, JobPanel } from './jobs';
+import { JobTab, JobPanel } from './jobs/index';
 
 const StyledJobsSection = styled.section`
   max-width: 700px;
